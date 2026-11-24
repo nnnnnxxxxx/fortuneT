@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>35蔡 星空占星館｜每日星座運勢解析</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 Google Fonts: Noto Sans TC 與 Cinzel 裝飾字體 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- 載入 FontAwesome 圖示庫 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                        serif: ['"Cinzel"', 'serif'],
+                    },
+                    colors: {
+                        cosmic: {
+                            950: '#060814',
+                            900: '#0B0F29',
+                            800: '#151B42',
+                            700: '#232B66',
+                        },
+                        gold: {
+                            300: '#FDE68A',
+                            400: '#FBBF24',
+                            500: '#F59E0B',
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 20s linear infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* 自定義星空背景與毛玻璃效果 */
+        body {
+            background: radial-gradient(ellipse at top, #1b2252 0%, #0b0f29 50%, #050711 100%);
+            color: #F8FAFC;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: rgba(21, 27, 66, 0.45);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+        }
+
+        .glass-badge {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.22), rgba(139, 92, 246, 0.25));
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(251, 191, 36, 0.5);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.25);
+        }
+
+        .gold-glow {
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
+        }
+
+        /* 隱藏原生日期選擇器的部分醜陋樣式並美化 */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1) sepia(100%) saturate(500%) hue-rotate(5deg);
+            cursor: pointer;
+            opacity: 0.85;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+
+        /* 進度條動畫過渡 */
+        .progress-fill {
+            transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* 結果區塊淡入上浮動畫 */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-up {
+            animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="relative selection:bg-amber-400 selection:text-cosmic-950">
+
+    <!-- 動態星空背景畫布 -->
+    <canvas id="starfield" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
+
+    <!-- 背景裝飾光暈 -->
+    <div class="fixed top-[-10%] left-[-10%] w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] pointer-events-none z-0"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-96 h-96 bg-amber-500/15 rounded-full blur-[120px] pointer-events-none z-0"></div>
+
+    <!-- 右上角固定顯示「35蔡」專屬精緻徽章 -->
+    <header class="fixed top-4 right-4 sm:top-6 sm:right-6 z-50">
+        <div class="glass-badge px-4 py-2 rounded-full flex items-center gap-2.5 transition-transform duration-300 hover:scale-105 cursor-default select-none">
+            <span class="relative flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400"></span>
+            </span>
+            <span class="text-amber-300 font-bold tracking-wider text-sm sm:text-base gold-glow">35蔡</span>
+            <i class="fa-solid fa-sparkles text-amber-300 text-xs"></i>
+        </div>
+    </header>
+
+    <!-- 自定義提示訊息框 (取代 alert) -->
+    <div id="toast-box" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden transition-all duration-300">
+        <div class="bg-rose-950/90 border border-rose-400/50 text-rose-100 px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-md flex items-center gap-3">
+            <i class="fa-solid fa-circle-exclamation text-rose-400"></i>
+            <span id="toast-message" class="text-sm font-medium">請選擇有效的出生日期</span>
+        </div>
+    </div>
+
+    <!-- 主內容容器 -->
+    <main class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pt-20 pb-16 sm:pt-24">
+        
+        <!-- 頁首標題區 -->
+        <section class="text-center mb-10 sm:mb-12">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/15 border border-indigo-400/30 text-indigo-300 text-xs sm:text-sm font-medium mb-4">
+                <i class="fa-solid fa-moon text-amber-300"></i>
+                <span id="current-date-display">載入星象時間中...</span>
+            </div>
+            <h1 class="text-3xl sm:text-5xl font-bold tracking-tight mb-3 bg-gradient-to-r from-amber-200 via-white to-purple-200 bg-clip-text text-transparent">
+                星辰指引・每日星座運勢
+            </h1>
+            <p class="text-slate-300/80 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+                輸入您的出生日期，讓浩瀚星象為您揭示今日的能量流動、愛情契機與事業財富密碼。
+            </p>
+        </section>
+
+        <!-- 生日輸入控制卡片 -->
+        <section class="glass-card rounded-3xl p-6 sm:p-8 mb-8 sm:mb-10 max-w-2xl mx-auto">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
+                <!-- 日期選擇器 -->
+                <div class="flex-1">
+                    <label for="birthday-input" class="block text-xs sm:text-sm font-medium text-amber-200/90 mb-2 flex items-center gap-2">
+                        <i class="fa-regular fa-calendar-days text-amber-400"></i>
+                        選擇您的出生日期
+                    </label>
+                    <input 
+                        type="date" 
+                        id="birthday-input" 
+                        value="1995-08-18"
+                        class="w-full bg-cosmic-950/70 border border-indigo-400/30 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 rounded-2xl px-4 py-3.5 text-white text-base outline-none transition-all"
+                    >
+                </div>
+
+                <!-- 查詢按鈕 -->
+                <button 
+                    id="predict-btn"
+                    type="button"
+                    class="sm:w-auto w-full px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-cosmic-950 font-bold text-base shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>查詢運勢</span>
+                </button>
+            </div>
+
+            <!-- 快速選擇示範生日標籤 -->
+            <div class="mt-4 pt-4 border-t border-white/10 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                <span>快速體驗：</span>
+                <button type="button" data-date="1998-03-25" class="quick-date px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/15 text-slate-300 transition">牡羊 (3/25)</button>
+                <button type="button" data-date="1996-07-10" class="quick-date px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/15 text-slate-300 transition">巨蟹 (7/10)</button>
+                <button type="button" data-date="1994-10-05" class="quick-date px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/15 text-slate-300 transition">天秤 (10/05)</button>
+                <button type="button" data-date="1999-01-28" class="quick-date px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/15 text-slate-300 transition">水瓶 (1/28)</button>
+            </div>
+        </section>
+
+        <!-- 運勢結果顯示區 (初始隱藏，查詢後顯示) -->
+        <section id="result-section" class="hidden space-y-6">
+            
+            <!-- 1. 星座主視覺與整體運勢總評卡片 -->
+            <div class="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden">
+                <!-- 裝飾星環 -->
+                <div class="absolute -right-12 -top-12 w-48 h-48 border border-amber-400/15 rounded-full animate-spin-slow pointer-events-none"></div>
+                
+                <div class="flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
+                    <!-- 左側：星座圖騰與基本資訊 -->
+                    <div class="flex flex-col sm:flex-row items-center text-center sm:text-left gap-5">
+                        <div id="zodiac-icon-box" class="w-24 h-24 rounded-3xl bg-gradient-to-br from-indigo-500/30 to-purple-600/30 border border-amber-300/40 flex items-center justify-center shadow-inner animate-float">
+                            <span id="zodiac-symbol" class="text-5xl text-amber-300 gold-glow">♌</span>
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 mb-1.5">
+                                <h2 id="zodiac-name" class="text-2xl sm:text-3xl font-bold text-white">獅子座</h2>
+                                <span id="zodiac-en" class="font-serif text-sm tracking-widest text-amber-300/80 uppercase">LEO</span>
+                            </div>
+                            <p id="zodiac-date-range" class="text-slate-300 text-sm mb-3">7月23日 - 8月22日</p>
+                            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                                <span id="zodiac-element" class="px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-200 border border-amber-400/30">
+                                    🔥 火象星座
+                                </span>
+                                <span id="zodiac-planet" class="px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/20 text-indigo-200 border border-indigo-400/30">
+                                    守護星：太陽
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右側：整體運勢總分與星等 -->
+                    <div class="flex flex-col items-center md:items-end justify-center bg-cosmic-950/50 px-6 py-4 rounded-2xl border border-white/10 min-w-[180px]">
+                        <span class="text-xs text-slate-400 mb-1">今日整體運勢指數</span>
+                        <div class="flex items-baseline gap-1">
+                            <span id="overall-score" class="text-4xl font-bold text-amber-300 gold-glow">92</span>
+                            <span class="text-sm text-slate-400">/ 100</span>
+                        </div>
+                        <div id="overall-stars" class="flex items-center gap-1 text-amber-400 text-sm mt-1.5">
+                            <!-- 星星由 JS 動態填入 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 今日運勢總評 -->
+                <div class="mt-6 pt-6 border-t border-white/10">
+                    <h3 class="text-sm font-semibold text-amber-300 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-quote-left text-xs opacity-70"></i>
+                        今日星象總評
+                    </h3>
+                    <p id="overall-summary" class="text-slate-200 leading-relaxed text-sm sm:text-base">
+                        今日太陽與木星形成和諧相位，為你帶來滿滿的自信與行動力。適合主動展現才華，過往累積的努力將在今天看見初步成果，保持開放的心態迎接新機會吧！
+                    </p>
+                </div>
+            </div>
+
+            <!-- 2. 四大分類運勢指數與解析 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <!-- 愛情運 -->
+                <div class="glass-card rounded-3xl p-6 hover:border-pink-400/40 transition-colors">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center">
+                                <i class="fa-solid fa-heart"></i>
+                            </div>
+                            <h3 class="font-bold text-white">愛情運勢</h3>
+                        </div>
+                        <span id="love-score-text" class="font-bold text-pink-300 text-lg">88%</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-cosmic-950/80 rounded-full overflow-hidden mb-3.5">
+                        <div id="love-bar" class="progress-fill h-full bg-gradient-to-r from-pink-500 to-rose-400 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="love-desc" class="text-slate-300 text-sm leading-relaxed">
+                        魅力值直線上升！單身者有機會在社交場合遇見聊得來的對象；有伴侶者不妨安排一場溫馨晚餐，感情將迅速升溫。
+                    </p>
+                </div>
+
+                <!-- 事業運 -->
+                <div class="glass-card rounded-3xl p-6 hover:border-sky-400/40 transition-colors">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-300 flex items-center justify-center">
+                                <i class="fa-solid fa-briefcase"></i>
+                            </div>
+                            <h3 class="font-bold text-white">事業學業</h3>
+                        </div>
+                        <span id="career-score-text" class="font-bold text-sky-300 text-lg">94%</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-cosmic-950/80 rounded-full overflow-hidden mb-3.5">
+                        <div id="career-bar" class="progress-fill h-full bg-gradient-to-r from-sky-500 to-indigo-400 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="career-desc" class="text-slate-300 text-sm leading-relaxed">
+                        思緒清晰且決斷力十足，適合處理高難度任務或進行簡報提案。你的專業表現容易獲得主管與團隊夥伴的高度肯定。
+                    </p>
+                </div>
+
+                <!-- 財運 -->
+                <div class="glass-card rounded-3xl p-6 hover:border-amber-400/40 transition-colors">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center">
+                                <i class="fa-solid fa-coins"></i>
+                            </div>
+                            <h3 class="font-bold text-white">財富運勢</h3>
+                        </div>
+                        <span id="wealth-score-text" class="font-bold text-amber-300 text-lg">85%</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-cosmic-950/80 rounded-full overflow-hidden mb-3.5">
+                        <div id="wealth-bar" class="progress-fill h-full bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="wealth-desc" class="text-slate-300 text-sm leading-relaxed">
+                        正財運穩健成長，適合檢視長期理財規劃或儲蓄目標。避免因一時情緒而衝動消費，把錢花在自我提升上最划算。
+                    </p>
+                </div>
+
+                <!-- 健康運 -->
+                <div class="glass-card rounded-3xl p-6 hover:border-emerald-400/40 transition-colors">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center">
+                                <i class="fa-solid fa-leaf"></i>
+                            </div>
+                            <h3 class="font-bold text-white">身心健康</h3>
+                        </div>
+                        <span id="health-score-text" class="font-bold text-emerald-300 text-lg">90%</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-cosmic-950/80 rounded-full overflow-hidden mb-3.5">
+                        <div id="health-bar" class="progress-fill h-full bg-gradient-to-r from-emerald-500 to-teal-300 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="health-desc" class="text-slate-300 text-sm leading-relaxed">
+                        精神狀態飽滿，精力充沛。建議傍晚進行適度的伸展或有氧運動，並多補充水分，有助於維持最佳身心平衡。
+                    </p>
+                </div>
+            </div>
+
+            <!-- 3. 今日幸運指南 -->
+            <div class="glass-card rounded-3xl p-6 sm:p-8">
+                <h3 class="text-base sm:text-lg font-bold text-white mb-5 flex items-center gap-2">
+                    <i class="fa-solid fa-compass text-amber-400"></i>
+                    今日幸運開運指南
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                    <!-- 幸運色 -->
+                    <div class="bg-cosmic-950/50 border border-white/10 rounded-2xl p-4 text-center">
+                        <span class="text-xs text-slate-400 block mb-2">幸運色彩</span>
+                        <div class="flex items-center justify-center gap-2">
+                            <span id="lucky-color-dot" class="w-4 h-4 rounded-full bg-amber-400 border border-white/40 shadow"></span>
+                            <span id="lucky-color" class="font-bold text-white text-sm sm:text-base">香檳金</span>
+                        </div>
+                    </div>
+                    <!-- 幸運數字 -->
+                    <div class="bg-cosmic-950/50 border border-white/10 rounded-2xl p-4 text-center">
+                        <span class="text-xs text-slate-400 block mb-2">幸運數字</span>
+                        <span id="lucky-number" class="font-bold text-amber-300 text-lg sm:text-xl font-serif">7</span>
+                    </div>
+                    <!-- 貴人星座 -->
+                    <div class="bg-cosmic-950/50 border border-white/10 rounded-2xl p-4 text-center">
+                        <span class="text-xs text-slate-400 block mb-2">貴人星座</span>
+                        <span id="lucky-sign" class="font-bold text-purple-300 text-sm sm:text-base">射手座</span>
+                    </div>
+                    <!-- 開運小物 -->
+                    <div class="bg-cosmic-950/50 border border-white/10 rounded-2xl p-4 text-center">
+                        <span class="text-xs text-slate-400 block mb-2">開運小物</span>
+                        <span id="lucky-item" class="font-bold text-emerald-300 text-sm sm:text-base">黑咖啡</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 頁尾版權 -->
+        <footer class="mt-14 text-center text-xs text-slate-500">
+            <p>© 2026 35蔡 星空占星館・星象數據每日更新，祝您擁有美好的一天</p>
+        </footer>
+    </main>
+
+    <script>
+        // ==========================================
+        // 1. 星空粒子背景動畫 (Canvas)
+        // ==========================================
+        (function initStarfield() {
+            const canvas = document.getElementById('starfield');
+            const ctx = canvas.getContext('2d');
+            let width, height, stars = [];
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+                createStars();
+            }
+
+            function createStars() {
+                stars = [];
+                const count = Math.floor((width * height) / 7000);
+                for (let i = 0; i < count; i++) {
+                    stars.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        radius: Math.random() * 1.6 + 0.3,
+                        alpha: Math.random(),
+                        speed: (Math.random() * 0.015) + 0.004,
+                        isGold: Math.random() > 0.85
+                    });
+                }
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                for (const star of stars) {
+                    star.alpha += star.speed;
+                    if (star.alpha > 1 || star.alpha < 0.1) {
+                        star.speed = -star.speed;
+                    }
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = star.isGold 
+                        ? `rgba(253, 230, 138, ${Math.abs(star.alpha)})` 
+                        : `rgba(255, 255, 255, ${Math.abs(star.alpha) * 0.85})`;
+                    ctx.fill();
+                }
+                requestAnimationFrame(draw);
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+            draw();
+        })();
+
+        // ==========================================
+        // 2. 12 星座資料庫與判斷邏輯
+        // ==========================================
+        const ZODIAC_DATA = [
+            { id: 'capricorn', name: '摩羯座', en: 'Capricorn', symbol: '♑', range: '12月22日 - 1月19日', element: '⛰️ 土象星座', planet: '土星' },
+            { id: 'aquarius',  name: '水瓶座', en: 'Aquarius',  symbol: '♒', range: '1月20日 - 2月18日',  element: '🌪️ 風象星座', planet: '天王星' },
+            { id: 'pisces',    name: '雙魚座', en: 'Pisces',    symbol: '♓', range: '2月19日 - 3月20日',  element: '🌊 水象星座', planet: '海王星' },
+            { id: 'aries',     name: '牡羊座', en: 'Aries',     symbol: '♈', range: '3月21日 - 4月19日',  element: '🔥 火象星座', planet: '火星' },
+            { id: 'taurus',    name: '金牛座', en: 'Taurus',    symbol: '♉', range: '4月20日 - 5月20日',  element: '⛰️ 土象星座', planet: '金星' },
+            { id: 'gemini',    name: '雙子座', en: 'Gemini',    symbol: '♊', range: '5月21日 - 6月21日',  element: '🌪️ 風象星座', planet: '水星' },
+            { id: 'cancer',    name: '巨蟹座', en: 'Cancer',    symbol: '♋', range: '6月22日 - 7月22日',  element: '🌊 水象星座', planet: '月亮' },
+            { id: 'leo',       name: '獅子座', en: 'Leo',       symbol: '♌', range: '7月23日 - 8月22日',  element: '🔥 火象星座', planet: '太陽' },
+            { id: 'virgo',     name: '處女座', en: 'Virgo',     symbol: '♍', range: '8月23日 - 9月22日',  element: '⛰️ 土象星座', planet: '水星' },
+            { id: 'libra',     name: '天秤座', en: 'Libra',     symbol: '♎', range: '9月23日 - 10月23日', element: '🌪️ 風象星座', planet: '金星' },
+            { id: 'scorpio',   name: '天蠍座', en: 'Scorpio',   symbol: '♏', range: '10月24日 - 11月22日',element: '🌊 水象星座', planet: '冥王星' },
+            { id: 'sagittarius',name:'射手座', en: 'Sagittarius',symbol:'♐', range: '11月23日 - 12月21日',element: '🔥 火象星座', planet: '木星' }
+        ];
+
+        // 根據月與日判斷對應星座
+        function getZodiacSign(month, day) {
+            if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return ZODIAC_DATA[0];
+            if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return ZODIAC_DATA[1];
+            if ((month === 2 && day >= 19) || (month === 3 && day <= 20)) return ZODIAC_DATA[2];
+            if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return ZODIAC_DATA[3];
+            if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return ZODIAC_DATA[4];
+            if ((month === 5 && day >= 21) || (month === 6 && day <= 21)) return ZODIAC_DATA[5];
+            if ((month === 6 && day >= 22) || (month === 7 && day <= 22)) return ZODIAC_DATA[6];
+            if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return ZODIAC_DATA[7];
+            if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return ZODIAC_DATA[8];
+            if ((month === 9 && day >= 23) || (month === 10 && day <= 23)) return ZODIAC_DATA[9];
+            if ((month === 10 && day >= 24) || (month === 11 && day <= 22)) return ZODIAC_DATA[10];
+            return ZODIAC_DATA[11];
+        }
+
+        // ==========================================
+        // 3. 運勢文案庫與確定性偽隨機生成器 (同日同星座結果一致)
+        // ==========================================
+        const SUMMARIES = [
+            "今日星象能量順暢，直覺敏銳度大幅提升。適合大膽推進心中的計畫，身邊的貴人會在關鍵時刻給予實用建議，保持自信就能收穫驚喜。",
+            "月亮帶來溫柔而穩定的力量，今天非常適合整理思緒與人際關係。放慢腳步傾聽內心聲音，你會發現原本糾結的事情其實早有答案。",
+            "木星的擴張能量為你注入滿滿活力！無論是學習新技能或拓展人脈都相當順利，保持好奇心與行動力，好運正悄悄向你靠近。",
+            "今日適合專注於細節與自我沉澱。把手邊的待辦事項逐一完成，踏實的節奏能為你帶來極大的安全感與成就感。",
+            "金星與水星形成和諧角度，溝通表達格外具說服力。今天適合進行重要對話、團隊協作或分享創意，你的想法將獲得熱烈迴響。"
+        ];
+
+        const LOVE_TEXTS = [
+            "桃花能量悄然綻放，真誠自然的互動最能吸引優質對象；有伴侶者適合分享彼此的生活趣事，默契更上一層樓。",
+            "情感交流順暢無礙，適時表達關心與讚美能讓關係更加甜蜜。單身者不妨多留意生活圈中默默支持你的人。",
+            "今天在感情上顯得格外體貼溫柔，適合製造一點小浪漫。放下過度的防備心，讓對方看見你最真實的一面吧。",
+            "人際魅力值高漲，容易成為聚會中的焦點。保持輕鬆愉快的態度，意想不到的緣分或許就在轉角處。"
+        ];
+
+        const CAREER_TEXTS = [
+            "工作效率極佳，靈感源源不絕，特別適合處理需要創意或溝通的任務，你的專業表現將令眾人刮目相看。",
+            "穩紮穩打是今日的致勝關鍵。把複雜的專案拆解成小步驟執行，不僅能精準達標，還能獲得主管的信任。",
+            "團隊合作運勢佳，與夥伴腦力激盪能激發出絕佳方案。遇到瓶頸時不妨主動請教前輩，能省下許多摸索時間。",
+            "學習與吸收能力強，適合規劃進修課程或研究新領域知識，今日累積的實力將成為未來躍升的重要基石。"
+        ];
+
+        const WEALTH_TEXTS = [
+            "正財運勢穩健，努力付出都能轉化為實質回報。適合檢視收支分配，為接下來的目標建立更完善的理財計畫。",
+            "偏財運小有驚喜，可能收到優惠資訊、小禮物或額外獎金。購物前多比價思考，能幫你守住荷包又買到心頭好。",
+            "財運平穩向上，適合將資金投資在健康與自我成長上。避免跟風聽信未經證實的小道消息，穩健策略最安心。",
+            "對金錢的敏銳度提升，適合整理帳務或規劃長期儲蓄。克制一時的購物衝動，會讓你月底感到非常慶幸。"
+        ];
+
+        const HEALTH_TEXTS = [
+            "身心能量平衡，精神狀態良好。維持規律作息與均衡飲食，傍晚散步吹吹風能讓思緒更加清爽。",
+            "活力充沛的一天！適合安排流汗運動釋放壓力，記得隨時補充溫開水，讓身體保持在最佳循環狀態。",
+            "注意肩頸與眼部的適度休息，工作每小時起身伸展五分鐘，搭配深呼吸能有效提升專注力與舒適度。",
+            "睡眠品質對今日狀態影響很大，睡前遠離螢幕、聽點輕柔音樂或泡個熱水腳，有助於徹底放鬆身心。"
+        ];
+
+        const LUCKY_COLORS = [
+            { name: '星光金', hex: '#FBBF24' },
+            { name: '極光紫', hex: '#A855F7' },
+            { name: '深海藍', hex: '#38BDF8' },
+            { name: '珊瑚粉', hex: '#FB7185' },
+            { name: '翡翠綠', hex: '#34D399' },
+            { name: '珍珠白', hex: '#F8FAFC' },
+            { name: '琥珀橘', hex: '#FB923C' }
+        ];
+
+        const LUCKY_ITEMS = ['手沖咖啡', '銀色飾品', '筆記本', '香氛蠟燭', '藍牙耳機', '保溫杯', '多肉植物', '晴雨傘'];
+
+        // 基於字串產生穩定的雜湊數值
+        function hashString(str) {
+            let hash = 2166136261;
+            for (let i = 0; i < str.length; i++) {
+                hash ^= str.charCodeAt(i);
+                hash = Math.imul(hash, 16777619);
+            }
+            return Math.abs(hash);
+        }
+
+        // 顯示自定義錯誤提示
+        function showToast(msg) {
+            const box = document.getElementById('toast-box');
+            const msgEl = document.getElementById('toast-message');
+            msgEl.textContent = msg;
+            box.classList.remove('hidden');
+            clearTimeout(window.toastTimer);
+            window.toastTimer = setTimeout(() => {
+                box.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 產生運勢並更新畫面
+        function generateHoroscope() {
+            const inputVal = document.getElementById('birthday-input').value;
+            if (!inputVal) {
+                showToast('請先選擇您的出生日期喔！');
+                return;
+            }
+
+            const parts = inputVal.split('-');
+            const month = parseInt(parts[1], 10);
+            const day = parseInt(parts[2], 10);
+
+            if (isNaN(month) || isNaN(day)) {
+                showToast('日期格式不正確，請重新選擇。');
+                return;
+            }
+
+            // 取得星座
+            const zodiac = getZodiacSign(month, day);
+
+            // 結合「今日日期 + 星座ID + 生日」作為種子，讓結果有變化且同一天查詢一致
+            const today = new Date();
+            const dateKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}-${zodiac.id}-${month}-${day}`;
+            const seed = hashString(dateKey);
+
+            // 計算各項分數 (75 ~ 98 之間，呈現正向有感的體驗)
+            const loveScore = 76 + (seed % 23);
+            const careerScore = 78 + ((seed >> 3) % 21);
+            const wealthScore = 74 + ((seed >> 6) % 24);
+            const healthScore = 79 + ((seed >> 9) % 20);
+            const overallScore = Math.round((loveScore + careerScore + wealthScore + healthScore) / 4);
+
+            // 更新星座基本資訊
+            document.getElementById('zodiac-symbol').textContent = zodiac.symbol;
+            document.getElementById('zodiac-name').textContent = zodiac.name;
+            document.getElementById('zodiac-en').textContent = zodiac.en;
+            document.getElementById('zodiac-date-range').textContent = zodiac.range;
+            document.getElementById('zodiac-element').textContent = zodiac.element;
+            document.getElementById('zodiac-planet').textContent = `守護星：${zodiac.planet}`;
+
+            // 更新總分與星等
+            document.getElementById('overall-score').textContent = overallScore;
+            const starCount = overallScore >= 92 ? 5 : (overallScore >= 82 ? 4 : 3);
+            let starsHtml = '';
+            for (let i = 0; i < 5; i++) {
+                starsHtml += i < starCount 
+                    ? '<i class="fa-solid fa-star"></i>' 
+                    : '<i class="fa-regular fa-star opacity-40"></i>';
+            }
+            document.getElementById('overall-stars').innerHTML = starsHtml;
+
+            // 更新總評與分類文案
+            document.getElementById('overall-summary').textContent = SUMMARIES[seed % SUMMARIES.length];
+            document.getElementById('love-desc').textContent = LOVE_TEXTS[(seed >> 2) % LOVE_TEXTS.length];
+            document.getElementById('career-desc').textContent = CAREER_TEXTS[(seed >> 4) % CAREER_TEXTS.length];
+            document.getElementById('wealth-desc').textContent = WEALTH_TEXTS[(seed >> 5) % WEALTH_TEXTS.length];
+            document.getElementById('health-desc').textContent = HEALTH_TEXTS[(seed >> 7) % HEALTH_TEXTS.length];
+
+            // 更新分類分數文字
+            document.getElementById('love-score-text').textContent = `${loveScore}%`;
+            document.getElementById('career-score-text').textContent = `${careerScore}%`;
+            document.getElementById('wealth-score-text').textContent = `${wealthScore}%`;
+            document.getElementById('health-score-text').textContent = `${healthScore}%`;
+
+            // 更新幸運指南
+            const luckyColorObj = LUCKY_COLORS[seed % LUCKY_COLORS.length];
+            document.getElementById('lucky-color').textContent = luckyColorObj.name;
+            document.getElementById('lucky-color-dot').style.backgroundColor = luckyColorObj.hex;
+            document.getElementById('lucky-number').textContent = (seed % 9) + 1;
+            
+            // 貴人星座 (避開自己)
+            const benefactorIdx = (ZODIAC_DATA.findIndex(z => z.id === zodiac.id) + 3 + (seed % 7)) % 12;
+            document.getElementById('lucky-sign').textContent = ZODIAC_DATA[benefactorIdx].name;
+            document.getElementById('lucky-item').textContent = LUCKY_ITEMS[(seed >> 3) % LUCKY_ITEMS.length];
+
+            // 顯示結果區塊並觸發動畫
+            const resultSection = document.getElementById('result-section');
+            resultSection.classList.remove('hidden');
+            resultSection.classList.remove('animate-fade-up');
+            void resultSection.offsetWidth; // 強制重繪以重啟動畫
+            resultSection.classList.add('animate-fade-up');
+
+            // 進度條動畫 (先歸零再展開)
+            const bars = [
+                { id: 'love-bar', val: loveScore },
+                { id: 'career-bar', val: careerScore },
+                { id: 'wealth-bar', val: wealthScore },
+                { id: 'health-bar', val: healthScore }
+            ];
+            bars.forEach(b => {
+                document.getElementById(b.id).style.width = '0%';
+            });
+            setTimeout(() => {
+                bars.forEach(b => {
+                    document.getElementById(b.id).style.width = `${b.val}%`;
+                });
+            }, 80);
+
+            // 平滑捲動至結果區
+            resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // ==========================================
+        // 4. 初始化事件綁定
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            // 顯示今日日期
+            const now = new Date();
+            const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+            const dateStr = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日・${weekDays[now.getDay()]}星象`;
+            document.getElementById('current-date-display').textContent = dateStr;
+
+            // 綁定查詢按鈕
+            document.getElementById('predict-btn').addEventListener('click', generateHoroscope);
+
+            // 綁定快速體驗按鈕
+            document.querySelectorAll('.quick-date').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('birthday-input').value = btn.getAttribute('data-date');
+                    generateHoroscope();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
